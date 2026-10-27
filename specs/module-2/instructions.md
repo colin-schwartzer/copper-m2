@@ -1,18 +1,18 @@
-# Module 2: Build Ask Copper, the shopping chatbot
+# Module 2: Ask Copper, the shopping chatbot
 
 _Fictional — for educational use._
 
-Shoppers on the Copper State Labs site keep asking what things cost and what's in stock. This module, you add **Ask Copper**: a chat panel that answers by using **tools** (small pieces of code that look up prices, do the math and check stock in the database) instead of guessing.
+Shoppers on the Copper State Labs site keep asking what things cost and what's in stock. **Ask Copper** is the answer: a chat panel that uses **tools** (small pieces of code that look up prices, do the math and check stock) instead of guessing.
 
-The panel also shows its work. As the answer arrives, you watch Copper pick a tool, send it numbers, read the result and write the reply. By the end you'll be able to explain exactly what a tool is, and show someone what happens without one.
+The panel shows its work. As the answer arrives, you watch Copper pick a tool, send it numbers, read the result and write the reply. By the end you'll be able to explain exactly what a tool is, and show someone what happens without one.
 
-The full requirements are in **`specs/module-2/spec.md`**. Read it before you start. This page walks you through the steps.
+**This module comes built.** You don't write the chatbot — it's already here, passing all 27 checks. Your job is to run it, read it, break it on purpose and write up what you find. The requirements it was built against are in **`specs/module-2/spec.md`**, and the code is yours to read and change.
 
 | | |
 |---|---|
-| **You'll build** | Four tools, Copper's instructions, a streaming Server Action, and the chat panel |
+| **You'll do** | Run it, compare tools on vs. off, change the stock data, and write your report |
 | **Your repo** | `copper-m2` (public, on your GitHub account; a new repo, separate from `copper-m1`) |
-| **Points** | 75 from tests, plus 10 for your report (a TA) and 15 for the live site |
+| **Points** | 75 from tests (already passing), plus 10 for your report (a TA) and 15 for the live site |
 | **Submit** | Your repo link, your Vercel link, and a screenshot of `npm run check` (see [What to submit](#what-to-submit)) |
 
 ---
@@ -21,9 +21,9 @@ The full requirements are in **`specs/module-2/spec.md`**. Read it before you st
 
 - Module 1 is done: you have a `copper-m1` repo and a live Vercel site.
 - Your tools still work: `node --version` starts with v24, and `gh auth status` says you're logged in.
-- You have a **Google AI Studio API key** ([aistudio.google.com](https://aistudio.google.com) > Get API key). It's free and needs no credit card. You'll need it from Step 5 on; the tests don't need it.
+- You have a **Google AI Studio API key**: sign in at [aistudio.google.com](https://aistudio.google.com), click **Get API key**, and copy it. It's free and needs no credit card. It's the only key this module uses.
 
-## Step 1: Get the starter code and make it yours
+## Step 1: Get the code and make it yours
 
 ```bash
 cd ~/Developer        # or wherever you keep your projects
@@ -33,93 +33,81 @@ npm run start-module  # creates github.com/YOUR-USERNAME/copper-m2 (public)
 npm ci
 ```
 
-The starter is the finished Module 1 landing page, plus three starter files in `lib/copper/assistant/` and the stock list in `lib/copper/data/inventory.json`.
-
-Check where you're starting from:
+Check that it arrived in one piece:
 
 ```bash
 npm run check
 ```
 
-Module 1's 12 criteria pass, and all 15 Module 2 criteria fail (**12 of 27**). The Module 2 ones are your to-do list. `REPORT` and `DEPLOY` show as "checked later".
+**27 of 27.** All of Module 1, and all fifteen of Module 2. `REPORT` and `DEPLOY` show as "checked later" — those two are yours to earn in Steps 4 and 7.
 
-## Step 2: Build the tools
+## Step 2: Run it
 
-Open your AI agent in the project folder. Start with the tools, because everything else depends on them:
+1. Create a file called `.env.local` in the `copper-m2` folder with one line in it:
+
+   ```
+   GOOGLE_GENERATIVE_AI_API_KEY=paste-your-key-here
+   ```
+
+   Never commit this file. It's already in `.gitignore`.
+2. `npm run dev`, open http://localhost:3000, and click **Ask Copper** at the bottom right.
+3. Ask: *"How much is Copper Home with Copper Plus, paid yearly, for 2 years?"*
+
+Watch the four stations appear in order: the tools Copper could choose from, what it was thinking, the tool it called with what it sent and what came back, then the answer. It should come to **$307**.
+
+Then try these:
+
+- *"Is Copper Notes in Night Sky in stock?"* — calls `check_availability`, which reads `lib/copper/data/inventory.json`.
+- *"What colors does Copper Home come in?"* — calls `get_products`, straight from the catalog, without looking at stock at all.
+- *"Is Copper Notes in Patina Teal in stock?"* — there's no such color, and Copper says so rather than guessing.
+- *"How long is the warranty?"* — out of scope, so Copper points you to the Copper Crew.
+
+Each question's cost and time print in the terminal running `npm run dev`, on a line starting `[ai_calls]`. They're fractions of a cent.
+
+## Step 3: Read how it works
+
+Five files do the whole job. Read them in this order — it's the order the answer travels:
+
+| File | What to look for |
+|---|---|
+| `lib/copper/assistant/tools.ts` | The four tools. Each has a description the model reads, a zod schema that rejects bad input, and an `execute` that runs your code. Notice no price is typed in: they all come from the catalog |
+| `lib/copper/assistant/instructions.ts` | Copper's instructions, in plain English. This is the difference between a chatbot that checks and one that guesses |
+| `lib/copper/assistant/ask.ts` | The Server Action. It streams, and builds up a `Progress` as each part arrives |
+| `components/copper/ask-copper.tsx` | The panel: the two chats, the **Use tools** switch, and the stations |
+| `components/copper/tool-call-card.tsx` | One tool call, drawn open: what Copper sent, and what came back |
+
+Ask your AI agent to walk you through any of them. A good prompt:
 
 ```
-Read specs/module-2/spec.md (section 1, "The four tools") and
-lib/copper/assistant/tools.ts. Plan get_products, get_prices, calculate_cost
-and check_availability, with their input rules. Show me how you'll work out
-"Copper Home with Copper Plus, paid yearly, for 2 years", and what
-get_products and check_availability each return for Copper Notes in Patina
-Teal. Don't write code yet.
+Read lib/copper/assistant/tools.ts and explain calculate_cost to me as if I
+don't code. What does the zod schema stop the model from doing, and why does
+Copper Plus only get charged once?
 ```
 
-**Read the plan before you approve it.** Check:
-- The math: $149 + 2 × $79 = **$307**. Copper Plus is counted **once**, even with two devices.
-- Every price comes from the catalog, and stock comes from `readInventory()`, read fresh each time.
-- Copper Notes in Patina Teal is "not a color", not "out of stock". Copper Notes only comes in Brushed Copper, Desert Sand and Night Sky.
-- `get_products` says which colors exist; `check_availability` says which are on the shelf today. A shopper asking about one color needs both facts.
+## Step 4: Turn the tools off
 
-Then let it build, and run `npm run check`. **AC-M2.5 to AC-M2.10** should pass. Commit.
+This is the point of the module, so do it carefully.
 
-## Step 3: Write Copper's instructions
+1. In the panel, switch **Use tools** off. It's a separate conversation, so it starts empty.
+2. Ask the same four questions from Step 2.
+3. Switch back on and ask them again.
 
-This step is yours, not the agent's. Open `lib/copper/assistant/instructions.ts` and replace the TODO with Copper's instructions, in your own words. Section 2 of the spec lists what they must cover:
+With the tools off the model gets no tools, no data and no instructions — just your question. It will answer confidently, and some of the prices will be invented. That's not a bug, and it's not a bad model: it's what every chatbot does when nothing connects it to the real numbers. Keep the wrong answers; you'll quote one in your report.
 
-- Copper's voice (warm, short, plain)
-- Always use the tools for prices, totals and stock; never answer them from memory
-- Only answer price and stock questions; for anything else, point to the Copper Crew
-- Say so when it isn't sure, or when stock can't be checked
+## Step 5: Change the data, not the code
 
-These instructions are the difference between a chatbot that checks and one that guesses. You'll see that in Step 6.
+Stock lives outside the code, in `lib/copper/data/inventory.json`, because in
+real life it changes every day.
 
-## Step 4: Stream the answer, then build the panel
+1. Ask *"Is Copper Notes in Night Sky in stock?"* and note the answer.
+2. Open `lib/copper/data/inventory.json` and change that row's
+   `units_in_stock` to `0`. Save it.
+3. Ask again, without restarting anything and without touching a line of code.
 
-```
-Read specs/module-2/spec.md sections 3, 4 and 5, plus lib/ai/call.ts,
-lib/ai/live.ts and lib/copper/assistant/progress.ts. Plan askCopper() in
-lib/copper/assistant/ask.ts: stream with callStream, read result.fullStream,
-and build up the Progress. Then plan the panel in
-components/copper/ask-copper.tsx and the tool card. Don't write code yet.
-```
-
-**Things the checks look for**, so tell your agent about them:
-
-- **Every model call goes through `callStream`** with `{ module: 2, feature: "ask-copper" }`, so it's logged with its cost and speed.
-- **Pass `providerOptions: THOUGHT_SUMMARIES`**, so Gemini explains what it's doing.
-- **The model gets the tools only when Use tools is on**, with at most 5 steps (`stopWhen: stepCountIs(5)`).
-- **With tools off, send no instructions and no tools** — just the conversation. That's the point of the comparison: the same model, the same question, nothing telling it to check. Don't send Copper's instructions here; tell a model to "always use your tools" and then give it none, and it returns nothing at all.
-- **Each update carries everything so far**, as a **fresh copy**. Hand out the object you keep changing and the panel's earlier updates change underneath it.
-- **Return `{ progress }` immediately**, then read the stream in the background.
-- **A tool step appears as soon as the model names the tool**, before its input is known. That's what lets the panel say "filling in the details…".
-- **Tools on and tools off are separate chats.** Each sends only its own history.
-- **The starter questions come back after every answer**, not just at the start. A shopper who typed their own question should still see all three waiting underneath the reply, so they can keep going with one click. Only hide them while a reply is streaming.
-- **The tool card is open by default**, before the reply, with "What Copper sent" above "What came back".
-- **No AI key? Show `<SetupRequired service="ai" />`** in the panel instead of the chat. `app/page.tsx` calls `isAiConfigured()` and passes the answer to the panel as a prop; a client component can't read the key.
-- **One page only.** The panel calls a Server Action; don't add an API route or a new page.
-- **Brand colors only**, as in Module 1.
-
-Run `npm run check` after each part. Commit when **all 15 Module 2 criteria** pass.
-
-## Step 5: Try it for real
-
-Before you look at the chat, know what you're looking for. Section 5 of the
-spec describes the panel exactly, so build what it describes; a TA compares
-your panel with it. The four stations are there to make the agent loop
-visible: the tools on offer, the model's thinking, the round trip to your
-code, and the answer.
-
-
-
-1. Add `GOOGLE_GENERATIVE_AI_API_KEY` to `.env.local` (see the README). It's the only key this module needs. Never commit this file.
-2. Run `npm run dev`, open http://localhost:3000 and click **Ask Copper**.
-3. Ask: "How much is Copper Home with Copper Plus, paid yearly, for 2 years?" Watch the stations appear: the tools Copper can use, what it was thinking, the tool it called with what it sent and what came back, then the answer.
-4. Ask: "Is Copper Notes in Night Sky in stock?" This time it should call `check_availability`, which reads `lib/copper/data/inventory.json`.
-5. Ask: "What colors does Copper Home come in?" That's `get_products`, straight from the catalog, without looking at stock at all.
-
-Each question's cost and time are logged by `lib/ai/call.ts`. They appear in the terminal running `npm run dev`, as a line starting `[ai_calls]`.
+The answer changes, because `check_availability` calls `readInventory()` fresh
+every single time instead of remembering what it saw. That one habit is the
+difference between a chatbot that's right today and one that was right last
+Tuesday. Put the original number back when you're done.
 
 ## Step 6: Write your report
 
