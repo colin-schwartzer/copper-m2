@@ -1,18 +1,20 @@
-# Module 2: Ask Copper, the shopping chatbot
+# Module 2: Build Ask Copper, the shopping chatbot
 
 _Fictional — for educational use._
 
-Shoppers on the Copper State Labs site keep asking what things cost and what's in stock. **Ask Copper** is the answer: a chat panel that uses **tools** (small pieces of code that look up prices, do the math and check stock) instead of guessing.
+Shoppers on the Copper State Labs site keep asking what things cost and what's in stock. This module, you add **Ask Copper**: a chat panel that answers by using **tools** (small pieces of code that look up prices, do the math and check stock in the database) instead of guessing.
 
-The panel shows its work. As the answer arrives, you watch Copper pick a tool, send it numbers, read the result and write the reply. By the end you'll be able to explain exactly what a tool is, and show someone what happens without one.
+The panel also shows its work. As the answer arrives, you watch Copper pick a tool, send it numbers, read the result and write the reply. By the end you'll be able to explain exactly what a tool is, and show someone what happens without one.
 
-**This module comes built.** You don't write the chatbot — it's already here, passing all 27 checks. Your job is to run it, read it, break it on purpose and write up what you find. The requirements it was built against are in **`specs/module-2/spec.md`**, and the code is yours to read and change.
+**Four prompts build the whole thing.** Paste each one into Claude Code and let it finish before you move on. The rest of this page is what *you* do between them, and there isn't much: sign up for two free accounts, paste one key, click Authorize twice, and look at the result in a browser.
+
+The full requirements are in **`specs/module-2/spec.md`**. The prompts send your agent there, so you don't have to read it.
 
 | | |
 |---|---|
-| **You'll do** | Run it, compare tools on vs. off, change the stock data, and write your report |
+| **You'll build** | Four tools, Copper's instructions, a streaming Server Action, and the chat panel |
 | **Your repo** | `copper-m2` (public, on your GitHub account; a new repo, separate from `copper-m1`) |
-| **Points** | 75 from tests (already passing), plus 10 for your report (a TA) and 15 for the live site |
+| **Points** | 75 from tests, and 30 for the live site, its Google key and the part 2 database |
 | **Submit** | Your repo link, your Vercel link, and a screenshot of `npm run check` (see [What to submit](#what-to-submit)) |
 
 ---
@@ -20,134 +22,180 @@ The panel shows its work. As the answer arrives, you watch Copper pick a tool, s
 ## Before you start
 
 - Module 1 is done: you have a `copper-m1` repo and a live Vercel site.
-- Your tools still work: `node --version` starts with v24, and `gh auth status` says you're logged in.
-- You have a **Google AI Studio API key**: sign in at [aistudio.google.com](https://aistudio.google.com), click **Get API key**, and copy it. It's free and needs no credit card. It's the only key this module uses.
+- `node --version` starts with v24, and `gh auth status` says you're logged in.
+- You have a **Google AI Studio API key** ([aistudio.google.com](https://aistudio.google.com) > Get API key). Free, no credit card.
 
-## Step 1: Get the code and make it yours
+## Step 1: Set up
 
-```bash
-cd ~/Developer        # or wherever you keep your projects
-git clone --branch module-2-part-1 https://github.com/CIS-591/class-examples.git copper-m2
-cd copper-m2
-npm run start-module  # creates github.com/YOUR-USERNAME/copper-m2 (public)
-npm ci
-```
-
-Check that it arrived in one piece:
-
-```bash
-npm run check
-```
-
-**27 of 27.** All of Module 1, and all fifteen of Module 2. `REPORT` and `DEPLOY` show as "checked later" — those two are yours to earn in Steps 4 and 7.
-
-## Step 2: Run it
-
-1. Create a file called `.env.local` in the `copper-m2` folder with one line in it:
-
-   ```
-   GOOGLE_GENERATIVE_AI_API_KEY=paste-your-key-here
-   ```
-
-   Never commit this file. It's already in `.gitignore`.
-2. `npm run dev`, open http://localhost:3000, and click **Ask Copper** at the bottom right.
-3. Ask: *"How much is Copper Home with Copper Plus, paid yearly, for 2 years?"*
-
-Watch the four stations appear in order: the tools Copper could choose from, what it was thinking, the tool it called with what it sent and what came back, then the answer. It should come to **$307**.
-
-Then try these:
-
-- *"Is Copper Notes in Night Sky in stock?"* — calls `check_availability`, which reads `lib/copper/data/inventory.json`.
-- *"What colors does Copper Home come in?"* — calls `get_products`, straight from the catalog, without looking at stock at all.
-- *"Is Copper Notes in Patina Teal in stock?"* — there's no such color, and Copper says so rather than guessing.
-- *"How long is the warranty?"* — out of scope, so Copper points you to the Copper Crew.
-
-Each question's cost and time print in the terminal running `npm run dev`, on a line starting `[ai_calls]`. They're fractions of a cent.
-
-## Step 3: Read how it works
-
-Five files do the whole job. Read them in this order — it's the order the answer travels:
-
-| File | What to look for |
-|---|---|
-| `lib/copper/assistant/tools.ts` | The four tools. Each has a description the model reads, a zod schema that rejects bad input, and an `execute` that runs your code. Notice no price is typed in: they all come from the catalog |
-| `lib/copper/assistant/instructions.ts` | Copper's instructions, in plain English. This is the difference between a chatbot that checks and one that guesses |
-| `lib/copper/assistant/ask.ts` | The Server Action. It streams, and builds up a `Progress` as each part arrives |
-| `components/copper/ask-copper.tsx` | The panel: the two chats, the **Use tools** switch, and the stations |
-| `components/copper/tool-call-card.tsx` | One tool call, drawn open: what Copper sent, and what came back |
-
-Ask your AI agent to walk you through any of them. A good prompt:
+Open Claude Code in the folder where you keep your projects and paste this:
 
 ```
-Read lib/copper/assistant/tools.ts and explain calculate_cost to me as if I
-don't code. What does the zod schema stop the model from doing, and why does
-Copper Plus only get charged once?
+Set up Module 2 of my CIS 591 project. Do these in order, and stop and tell me
+if a step fails:
+1. git clone --branch module-2-part-1 https://github.com/CIS-591/class-examples.git copper-m2
+2. Go into the copper-m2 folder
+3. npm run start-module   (makes copper-m2 on my own GitHub, public)
+4. npm ci
+5. npm run check — show me the output. It should say 12 of 27.
 ```
 
-## Step 4: Turn the tools off
+Those 12 are Module 1's criteria. The 15 that fail are what the next prompt
+builds. `DEPLOY`, `AI-KEY` and `SUPABASE` show as "checked later" — the grader
+does those on your live site and in your repo.
 
-This is the point of the module, so do it carefully.
+**Restart Claude Code inside the new `copper-m2` folder** before the next step,
+so it picks up the project's rules and MCP servers.
 
-1. In the panel, switch **Use tools** off. It's a separate conversation, so it starts empty.
-2. Ask the same four questions from Step 2.
-3. Switch back on and ask them again.
+## Step 2: Build Ask Copper
 
-With the tools off the model gets no tools, no data and no instructions — just your question. It will answer confidently, and some of the prices will be invented. That's not a bug, and it's not a bad model: it's what every chatbot does when nothing connects it to the real numbers. Keep the wrong answers; you'll quote one in your report.
+One prompt builds all of it. Paste this and let it work:
 
-## Step 5: Change the data, not the code
+```
+Build Module 2 of this project, following specs/module-2/spec.md exactly. Work
+in this order, running npm run check after each part and committing when it
+improves:
 
-Stock lives outside the code, in `lib/copper/data/inventory.json`, because in
-real life it changes every day.
+1. The four tools in lib/copper/assistant/tools.ts (spec section 1). The tests
+   check these: "Copper Home with Copper Plus, paid yearly, for 2 years" is
+   $149 + 2 x $79 = $307, counting Copper Plus once per household, not per
+   device; Copper Notes in Patina Teal is "not a color", not "out of stock";
+   no price is typed into the code — read every price from the catalog, and
+   read stock fresh from readInventory() on every call.
+2. COPPER_INSTRUCTIONS in lib/copper/assistant/instructions.ts (spec section
+   2): at least 40 words of plain English covering every point the spec lists.
+3. askCopper() in lib/copper/assistant/ask.ts and the panel in
+   components/copper/ask-copper.tsx with its tool card (spec sections 3, 4 and
+   5). Every model call goes through callStream with { module: 2, feature:
+   "ask-copper" } and providerOptions: THOUGHT_SUMMARIES. Tools and
+   instructions are sent only when Use tools is on, with stopWhen:
+   stepCountIs(5); with it off, send no instructions and no tools at all. Each
+   update is a fresh copy of everything so far. askCopper returns { progress }
+   immediately and reads the stream in the background. A tool step appears at
+   tool-input-start, before its input is known. Tools on and tools off are
+   separate conversations. Use a Server Action, no API route and no new page,
+   and brand colours only.
 
-1. Ask *"Is Copper Notes in Night Sky in stock?"* and note the answer.
-2. Open `lib/copper/data/inventory.json` and change that row's
-   `units_in_stock` to `0`. Save it.
-3. Ask again, without restarting anything and without touching a line of code.
-
-The answer changes, because `check_availability` calls `readInventory()` fresh
-every single time instead of remembering what it saw. That one habit is the
-difference between a chatbot that's right today and one that was right last
-Tuesday. Put the original number back when you're done.
-
-## Step 6: Write your report
-
-Open `specs/module-2/report.md` and fill it in:
-
-1. Ask the five test questions with **Use tools on**, then ask the same five in the **tools-off** chat.
-2. Mark each answer right or wrong, and copy its cost and time from `ai_calls`.
-3. Read one tool card and one thought summary closely, and write down what they say.
-4. Change a stock level in `lib/copper/data/inventory.json`, ask again, and see the answer change without touching any code.
-
-The REPORT rubric in `spec.md` is what the TA uses. All of this costs well under a dollar, and Google's free tier may cover it entirely.
-
-This is the one part of the module that needs real keys: the 75 test points never call a model, but the report is written from your own runs.
-
-## Step 7: Check your work
-
-```bash
-npm run check       # aim for 27 of 27: all of Module 1 and Module 2
-npm test            # the app's own tests
-npm run lint        # code style
-npm run typecheck   # type errors
-npm run format      # tidies the spacing; the other four pass without it
+Then run npm run check, npm test, npm run lint, npm run typecheck and npm run
+format, fix anything that fails without touching specs/*/tests, and tell me
+the final count. It should be 27 of 27. Commit and push to origin, which is
+my own copper-m2 repo.
 ```
 
-`npm run lint` includes React's newer rules. If it complains that a variable
-can't be reassigned after render, count with something the rule allows (an
-index, or a running total you work out before the JSX) rather than changing a
-variable inside a `.map()`.
+Expect this to take a while and to ask you to approve edits. When it says 27 of
+27, part 1's 75 points are done.
 
-## Step 8: Push and deploy
+## Step 3: Try it
 
-```bash
-git push
+This is the part no agent can do for you: looking at the thing.
+
+1. Put your Google AI Studio key in `.env.local` as
+   `GOOGLE_GENERATIVE_AI_API_KEY=your-key-here`. Never commit this file.
+2. Run `npm run dev` and open http://localhost:3000, then click **Ask Copper**.
+3. Ask: _"How much is Copper Home with Copper Plus, paid yearly, for 2 years?"_
+   Watch the stations appear: the tools Copper can use, what it was thinking,
+   the tool it called with what it sent and what came back, then the answer.
+4. Flip **Use tools** off and ask the same question. Same model, same question,
+   nothing telling it to check — watch it invent a price.
+
+That contrast is the whole point of the module. Each answer's cost and time
+print in the terminal as a line starting `[ai_calls]`.
+
+## Step 4: Deploy
+
+Type `/mcp` in Claude Code and authorize **Vercel** (it's already listed in
+this project's `.mcp.json`). Then paste:
+
+```
+Deploy this project to Vercel with the Vercel MCP tools, set
+GOOGLE_GENERATIVE_AI_API_KEY in the Vercel project from my .env.local without
+printing it, redeploy so it takes effect, and give me the production URL.
 ```
 
-1. Go to https://vercel.com/new and import your **`copper-m2`** repository.
-2. Under **Environment Variables**, add `GOOGLE_GENERATIVE_AI_API_KEY`. Click **Deploy**.
-3. Open your Vercel link and ask Copper a question.
+Open the URL and ask Copper a question. The grader loads this page twice: once
+for the Ask Copper launcher (10 points) and once to check the setup card is
+*gone* (10 points), which only happens if the key reached Vercel.
 
-The grader looks for "Ask Copper" on your live site. It shows even without the keys, but add them so your chatbot really works.
+---
+
+# Part 2: live stock
+
+Part 1 is worth all 75 test points and is finished. Part 2 is the second class
+session, and it's two prompts long.
+
+Right now today's stock lives in a file that ships inside your deployed code.
+A warehouse update needs a developer, a commit and a deploy. Here you move
+stock into a **database** (Supabase) and change one function so Copper reads
+it. Nothing else about Copper changes, and no test changes, because the tests
+never look at where stock really comes from.
+
+A **database** here is just a table on someone else's computer that your app
+can read over the internet, and that you can edit in a web page without
+touching code.
+
+## Step 5: Get the part 2 files and a Supabase project
+
+Paste this:
+
+```
+In this repo, pull the part 2 files from the course remote (the class repo;
+my own repo is origin). First commit anything uncommitted, then:
+git pull --no-rebase course module-2-part-1
+npm install
+If the merge stops over specs/module-2/report.md, that worksheet was retired:
+delete it and finish the merge. Then show me what changed.
+```
+
+That brings in the migration, the seed, the Supabase client and the MCP config,
+and keeps everything you wrote in part 1 — including any shadcn or AI Elements
+components you added.
+
+While it runs, go to [supabase.com](https://supabase.com) and sign up with
+your personal email, not your ASU one. Stop there — you don't need to create
+anything; Claude makes the project in the next step.
+
+Then **restart Claude Code** (the pull replaced `.mcp.json`, and a running
+session won't see the new servers) and type `/mcp` to authorize **Supabase**.
+Its MCP server acts with *your* permissions and can create and change
+databases, so authorize your own personal organization, never one with real
+data in it.
+
+## Step 6: Let Claude move stock into it
+
+```
+Using the Supabase MCP tools, move stock out of the JSON file and into the
+database:
+1. Create a free Supabase project called copper-m2 if I don't have one
+   already, and wait until it's ready.
+2. Apply supabase/migrations/20261029000000_inventory.sql to it, run
+   supabase/seed.sql, and show me the rows in the inventory table.
+3. Look up the project URL and the publishable key, add them to .env.local as
+   NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY without
+   printing the file, and set the same two in Vercel with the Vercel MCP tools.
+4. Read lib/copper/inventory.ts and lib/supabase/server.ts, then rewrite
+   readInventory() to read every row from the Supabase inventory table instead
+   of the JSON file, keeping the same return type: InventoryRow[] when it
+   works, null when it can't read.
+5. Delete lib/copper/data/inventory.json, run npm run check, commit, push to
+   origin (my own copper-m2 repo, not the course remote), and redeploy to
+   Vercel.
+```
+
+`npm run check` must still say **27 of 27**. The tests replace the whole
+inventory file with a fake, so moving stock to a database can't affect them.
+If a number moved, something else broke.
+
+## Step 7: Prove it's live
+
+The payoff, and it takes a minute:
+
+1. Open your **deployed** site and ask _"Is Copper Notes in Night Sky in
+   stock?"_
+2. In Supabase, open the **Table Editor**, find row `CN-NSK`, and change
+   `units_in_stock` from 0 to 40. Save.
+3. Ask the live site the same question again.
+
+The answer changes. No commit, no deploy, no code. A shop manager could have
+done that.
 
 ## What to submit
 
@@ -157,7 +205,7 @@ In Canvas:
 2. Your Vercel link
 3. A screenshot of `npm run check` showing **27 of 27** criteria passed
 
-Your report is graded from `specs/module-2/report.md` in your repo, so make sure it's committed and pushed.
+Everything else is graded from your repo and your live site, so make sure your last commit is pushed and Vercel has redeployed.
 
 ## How it's graded
 
@@ -166,15 +214,15 @@ Your report is graded from `specs/module-2/report.md` in your repo, so make sure
 | Part A: the chat widget (AC-M2.1 to AC-M2.4) | 20 | Tests |
 | Part B: the tools (AC-M2.5 to AC-M2.10) | 30 | Tests |
 | Part C: streaming (AC-M2.11 to AC-M2.15) | 25 | Tests (with a fake model and database, so they cost nothing) |
-| REPORT: tools on vs. off | 10 | A TA, using the REPORT rubric in `spec.md` |
-| DEPLOY: live on Vercel | 15 | The grader checks your live site |
+| DEPLOY: live on Vercel | 10 | The grader loads your site and looks for Ask Copper |
+| AI-KEY: the live site has a Google key | 10 | The grader checks your site shows the chat, not the setup card |
+| SUPABASE: stock comes from the database | 10 | The grader checks `readInventory()` reads Supabase and the JSON file is gone (part 2) |
 
 Your last commit before the deadline is graded. Tests are run with your instructor's copy, so changing them in your repo doesn't change your grade.
 
 ## Rules
 
-- **Don't edit** `specs/*/tests`, `specs/*/rubric.md`, `lib/copper/catalog.ts`, `lib/copper/inventory.ts` or `lib/copper/data/`.
-- **Write Copper's instructions yourself.** You can ask your agent to critique them, but the words should be yours.
+- **Don't edit** `specs/*/tests`, `specs/*/rubric.md`, `lib/copper/catalog.ts`, `lib/copper/inventory.ts` or `lib/copper/data/` — until Step 6, which rewrites `lib/copper/inventory.ts` and deletes the stock file on purpose.
 - **Never commit `.env.local` or paste keys into code.**
 - **Everything about Copper State Labs is fictional.** Don't use real company names, logos or products.
 
@@ -187,7 +235,14 @@ Your last commit before the deadline is graded. Tests are run with your instruct
 | Copper says nothing at all with tools off | You sent Copper's "always use your tools" instructions with no tools. With tools off, send no instructions at all |
 | No thinking station appears | `providerOptions: THOUGHT_SUMMARIES` is missing from your `callStream` call |
 | The answer appears all at once | You're waiting for the whole stream before sending an update. Send one on every change |
-| Copper says stock can't be checked | `readInventory()` returned nothing. Check `lib/copper/data/inventory.json` is still valid JSON |
+| Copper says stock can't be checked (part 1) | `readInventory()` returned nothing. Check `lib/copper/data/inventory.json` is still valid JSON |
+| Copper says stock can't be checked (after Step 6) | The two `NEXT_PUBLIC_SUPABASE_*` variables are missing or wrong, or the project is paused. Check `.env.local`, restart `npm run dev`, and open the project in Supabase to wake it |
+| `/mcp` is empty, or a server is missing | Claude Code asks whether to trust a project's MCP servers the first time it sees them. If you said no, or never saw the prompt, restart `claude` inside `copper-m2` and accept |
+| `/mcp` shows no Vercel or Supabase after Step 5 | The pull replaced `.mcp.json` while Claude Code was running. Restart `claude`, then `/mcp` |
+| `/mcp` shows no Supabase tools | Claude Code was started outside your `copper-m2` folder, so it never read `.mcp.json`, or you closed the browser before authorizing. Restart `claude` inside `copper-m2`, then `/mcp` |
+| Claude says it can't see your tables | You authorized the wrong Supabase organization. In `/mcp`, disconnect Supabase and authorize again, choosing the organization that holds your project |
+| Stock works locally but not on Vercel | The two Supabase variables are only in `.env.local`. Add them in Project Settings > Environment Variables and redeploy |
+| Your Supabase project is "paused" | Free projects sleep after about a week unused. Open it in Supabase to wake it, and always wake it before a deadline |
 | AC-M2.5 fails with $386.88 or similar | Copper Plus is being counted once per device. It's once per household |
 | AC-M2.6 fails | A price is typed into `tools.ts`. Read every price from `getProducts()` and `getPlans()` |
 | AC-M2.7 or AC-M2.10 fails | An input schema is still `z.any()`, or lets in something the contract doesn't allow |
@@ -202,4 +257,4 @@ Your last commit before the deadline is graded. Tests are run with your instruct
 | Two tool cards appear for one tool call | `tool-input-start` gives `part.id`; the later parts give the same id as `part.toolCallId`. Match on it |
 | `npm run build` stops with a Next.js security notice | Run it again; it continues. The course pins this version, so don't upgrade it |
 
-Stuck for more than 20 minutes? Post in the course forum with the command you ran and the full error message, or come to office hours.
+When something breaks, hand your agent the command you ran and the full error message. After 20 minutes with no progress, or when a fix works and you can't tell why, post in the course forum or come to office hours.
