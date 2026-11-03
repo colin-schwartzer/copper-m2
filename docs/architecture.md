@@ -103,7 +103,7 @@ the page so shoppers (and students) can see how the answer was found.
 | Streaming calls | `lib/ai/call.ts` | `callStream()` (logged to `ai_calls` like `callText`) and `THOUGHT_SUMMARIES` |
 | Tools | `lib/copper/assistant/tools.ts` | `get_products`, `get_prices` and `calculate_cost` (from `lib/copper/catalog.ts`), `check_availability` (from `lib/copper/inventory.ts`) |
 | Instructions | `lib/copper/assistant/instructions.ts` | Copper's system prompt: voice, always use tools, prices and stock only |
-| Data | `lib/copper/inventory.ts`, `lib/copper/data/inventory.json` | `readInventory()` over stock rows: `sku`, `product`, `color`, `units_in_stock`, `next_shipment`. Named like the database columns it moves to in a later module |
+| Data | `lib/copper/inventory.ts`, `lib/supabase/server.ts`, `supabase/migrations/` | `readInventory()` reads the Supabase `inventory` table fresh on every call: `sku`, `product`, `color`, `units_in_stock`, `next_shipment`. Returns `null` if Supabase isn't set up or can't be read |
 | AI calls | `lib/ai/call.ts` (module 2, `ask-copper`) | Gemini 2.5 Flash by default, up to 5 steps per question, about $0.0005 each |
 
 **Data flow:** shopper types a question → the panel calls the `askCopper`
@@ -129,5 +129,5 @@ the panel redraws the stations, then types out the reply.
 
 **Risks and open questions:** the thinking station shows the model's own words,
 including its mistakes, which is honest but exposes internals to customers.
-Stock is only as right as `inventory.json`, which nothing keeps in step with a
-real warehouse. Tools are read-only, so a wrong answer can't change anything.
+Stock is only as right as the Supabase `inventory` table, which nothing keeps in
+step with a real warehouse. Tools are read-only, so a wrong answer can't change anything.
